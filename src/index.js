@@ -21,7 +21,7 @@ async function getAddressAndKey(args) {
     .getWallet()
   const privateKey = wallet.getPrivateKeyString()
   const address = wallet.getChecksumAddressString()
-  return { ...args, mnemonic, address, privateKey }
+  return { ...args, address, privateKey }
 }
 
 async function initWeb3(args) {
