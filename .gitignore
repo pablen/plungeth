@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+
+# environment variables
+.env
+.env.*
+
+# misc
+.DS_Store
+
+# logs
+npm-debug.log*
+
+# ESLint
+.eslintcache
