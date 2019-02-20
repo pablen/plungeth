@@ -135,7 +135,7 @@ async function sendNewTransaction(args) {
     nonce: selectedTransaction.nonce,
     value: edited.value,
     from: selectedTransaction.from,
-    data: selectedTransaction.data,
+    data: selectedTransaction.input,
     gas: edited.gas,
     to: selectedTransaction.to
   }

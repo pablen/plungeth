@@ -1,7 +1,14 @@
 {
   "name": "plungeth",
-  "version": "1.0.0",
-  "description": "Unblock Ethereum Transactions",
+  "version": "1.0.1",
+  "description": "Ethereum Transaction Plunger",
+  "keywords": [
+    "crypto",
+    "cryptocurrency",
+    "ethereum",
+    "metronome"
+  ],
+  "repository": "pablen/plungeth",
   "main": "src/index.js",
   "scripts": {
     "start": "node -r dotenv/config src/index.js",
