@@ -40,7 +40,7 @@ async function getPendingTransactions(args) {
     )
     .then(txs =>
       txs
-        .filter(({ from }) => from === address)
+        .filter(({ from }) => from.toLowerCase() === address.toLowerCase())
         .sort((a, b) => a.nonce - b.nonce)
     )
 
