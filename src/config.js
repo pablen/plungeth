@@ -16,7 +16,7 @@ const chains = {
     symbol: 'ETH'
   },
   ethRopstenLocal: {
-    displayName: 'Ethereum',
+    displayName: 'Ropsten (Local)',
     nodeUrl: 'ws://localhost:8546',
     symbol: 'ETH'
   },

@@ -1,14 +1,14 @@
-const smartRound = require('smart-round')
+#!/usr/bin/env node
+
 const { prompt } = require('enquirer')
 const hdkey = require('ethereumjs-wallet/hdkey')
+const chalk = require('chalk')
 const bip39 = require('bip39')
 const Web3 = require('web3')
 const ora = require('ora')
 
 const messages = require('./messages')
 const config = require('./config')
-
-const round = smartRound(6, 0, 6)
 
 process.stdout.write('\x1Bc')
 
@@ -52,68 +52,80 @@ async function getPendingTransactions(args) {
 }
 
 async function selectTransaction(args) {
-  const { pendingTransactions, address, web3 } = args
+  const { pendingTransactions, address } = args
 
   messages.txListDescription(address)
 
-  const formatLine = tx => ({
-    message: `${tx.hash} | nonce: ${tx.nonce}, value: ${round(
-      web3.utils.fromWei(tx.value),
-      true
-    )} ETH, gas: ${tx.gas}, gasPrice: ${web3.utils.fromWei(
-      tx.gasPrice,
-      'gwei'
-    )} Gwei`,
-    value: tx
+  const { selectedHash } = await prompt({
+    name: 'selectedHash',
+    message: chalk.cyan('  Select a transaction you would like to unblock:\n'),
+    theme: {
+      styles: {
+        primary: chalk.reset,
+        em: chalk.bold
+      }
+    },
+    type: 'select',
+    choices: pendingTransactions.map((tx, i) => ({
+      message: messages.transactionRow(tx, i),
+      value: tx.hash
+    }))
   })
 
-  const { selectedTransaction } = await prompt({
-    name: 'selectedTransaction',
-    message:
-      'Select a transaction you would like to unblock (recommended: select lowest nonce):',
-    type: 'select',
-    choices: pendingTransactions.map(formatLine)
-  })
+  const selectedTransaction = pendingTransactions.find(
+    ({ hash }) => hash === selectedHash
+  )
 
   return { ...args, selectedTransaction }
 }
 
 async function editTransaction(args) {
-  const { selectedTransaction } = args
+  const { selectedTransaction, web3 } = args
 
   messages.newTxDescription()
 
-  const edited = await prompt([
-    {
-      name: 'value',
-      message: 'Value (in wei)',
-      type: 'input',
-      initial: selectedTransaction.value
-    },
-    {
-      name: 'gas',
-      message: 'Gas Limit',
-      type: 'input',
-      initial: selectedTransaction.gas
-    },
-    {
-      name: 'gasPrice',
-      message: 'Gas Price (in wei). A 10% was added to the original value.',
-      type: 'input',
-      initial: Math.ceil(parseInt(selectedTransaction.gasPrice, 10) * 1.1)
-    }
-  ])
+  const chainGasPriceBN = web3.utils.toBN(await web3.eth.getGasPrice())
+  const txGasPriceBN = web3.utils.toBN(selectedTransaction.gasPrice)
+  const increasedTxGasPriceBN = txGasPriceBN.divn(10).add(txGasPriceBN)
+  const suggestedGasPriceBN = chainGasPriceBN.gt(increasedTxGasPriceBN)
+    ? chainGasPriceBN
+    : increasedTxGasPriceBN
+
+  const { edited } = await prompt({
+    name: 'edited',
+    message: messages.transactionFormHelp(
+      chainGasPriceBN,
+      txGasPriceBN,
+      suggestedGasPriceBN
+    ),
+    type: 'form',
+    choices: [
+      {
+        name: 'value',
+        message: 'Value (in wei)',
+        initial: selectedTransaction.value.toString()
+      },
+      {
+        name: 'gas',
+        message: 'Gas Limit',
+        initial: selectedTransaction.gas.toString()
+      },
+      {
+        name: 'gasPrice',
+        message: 'Gas Price (in Gwei)',
+        initial: web3.utils.fromWei(suggestedGasPriceBN, 'gwei').toString(),
+        result: value => web3.utils.toWei(value, 'gwei')
+      }
+    ]
+  })
+  console.log(edited)
   return { ...args, edited }
 }
 
 async function confirmTransaction(args) {
-  const { edited, web3 } = args
+  const { edited } = args
 
-  messages.confirmationMessage({
-    value: round(web3.utils.fromWei(edited.value), true),
-    gasPrice: web3.utils.fromWei(edited.gasPrice, 'gwei'),
-    gas: edited.gas
-  })
+  messages.confirmationMessage(edited)
 
   const { isConfirmed } = await prompt({
     type: 'confirm',
@@ -152,13 +164,16 @@ async function sendNewTransaction(args) {
 
   const promiEvent = web3.eth.sendTransaction(transactionObject)
 
-  promiEvent.on('transactionHash', () => {
+  promiEvent.on('transactionHash', hash => {
+    spinner.succeed(messages.txHashReceived(hash))
+    spinner.start()
     spinner.text = 'Waiting for receipt...'
   })
 
   promiEvent.on('receipt', receipt => {
-    spinner.succeed('Mined!')
+    spinner.succeed('Transaction mined!')
     messages.showReceipt(receipt)
+    messages.bye()
     process.exit(0)
   })
 
@@ -174,7 +189,7 @@ async function sendNewTransaction(args) {
 const askForChainAndMnemonic = [
   {
     name: 'chainId',
-    message: 'Select the chain you want to work with',
+    message: messages.selectChain(),
     type: 'select',
     choices: config.enabledChains.map(chainId => ({
       message: config.chains[chainId].displayName,
@@ -183,11 +198,7 @@ const askForChainAndMnemonic = [
   },
   {
     name: 'mnemonic',
-    message:
-      typeof process.env.MNEMONIC === 'string' &&
-      process.env.MNEMONIC.length > 0
-        ? 'Confirm the mnemonic in your .env file or provide a new one'
-        : 'Provide the mnemonic for your account (pst! you can use an .env file to avoid this)',
+    message: messages.inputMnemonic(),
     type: 'input',
     initial:
       typeof process.env.MNEMONIC === 'string' &&
