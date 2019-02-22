@@ -98,6 +98,10 @@ function transactionRow(tx, index) {
   )
 }
 
+function selectTransaction() {
+  return chalk.cyan('  Select a transaction you would like to unblock:\n')
+}
+
 function newTxDescription() {
   console.log(
     chalk.cyan(
@@ -189,6 +193,7 @@ module.exports = {
   confirmationMessage,
   sendingTransaction,
   txListDescription,
+  selectTransaction,
   newTxDescription,
   invalidMnemonic,
   txHashReceived,

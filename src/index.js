@@ -58,7 +58,7 @@ async function selectTransaction(args) {
 
   const { selectedHash } = await prompt({
     name: 'selectedHash',
-    message: chalk.cyan('  Select a transaction you would like to unblock:\n'),
+    message: messages.selectTransaction(),
     theme: {
       styles: {
         primary: chalk.reset,
@@ -232,3 +232,8 @@ prompt(askForChainAndMnemonic)
     messages.error(err.message)
     process.exit(1)
   })
+
+prompt.on('cancel', () => {
+  messages.bye()
+  process.exit(0)
+})
