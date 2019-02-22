@@ -27,6 +27,7 @@ MNEMONIC="foo bar baz ..."
 Tips welcome
 
 _ETH_: `0x37b89B8eC091Ac3e6e336Ce2d664676D22c910D5`
+
 _MET_: `0x37b89B8eC091Ac3e6e336Ce2d664676D22c910D5`
 
 ## License
